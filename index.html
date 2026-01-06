@@ -221,32 +221,31 @@
 </head>
 <body>
     <div class="container">
-        <h1>Coverage Log Parser</h1>
+        <h1>Coverage parser</h1>
+
+        <p>Just run jest with coverage a few times and paste the results inside the textarea below. All coverage reports are combined. When you see multiple coverage percentages you know somethings flaky</p>
         
+        <p>Flakyness occurs when the order of your testsuite changes. Thus its important to also run the testsuite multiple times with different seeds. This is my code:</p>
+
+        <code>
+            <pre>
+for seed in {1..10}; do
+    yarn nx test NX_PROJECT OPTIONAL_PATH_GLOB --randomize --coverage --seed=$seed
+done
+            </pre>
+        </code>
+
         <div class="input-section">
             <label for="fileInput">Select coverage.log file:</label>
             <input type="file" id="fileInput" accept=".log,.txt" style="margin-bottom: 15px; padding: 10px; border: 2px solid #ddd; border-radius: 4px; width: 100%; box-sizing: border-box;">
 
-            <label for="logInput">Or paste your coverage.log content here:</label>
+            <label for="logInput">Or paste your coverage output(s)</label>
             <textarea id="logInput" placeholder="Paste the contents of your coverage.log file here..."></textarea>
         </div>
 
         <div class="button-section">
             <button onclick="parseCoverage()">Parse Coverage Data</button>
         </div>
-        
-        <h2>Known flaky</h2>
-        <ul>
-            <li>
-                ProjectServicePageHourSection.tsx
-            </li>
-            <li>
-                ProjectForm.hooks.ts
-            </li>
-            <li>
-                InvoiceDetailsPageTabs.tsx
-            </li>
-        </ul>
 
         <div class="output-section">
             <div id="stats" style="display: none;"></div>
