@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coverage Log Parser</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .input-section {
+            margin-bottom: 30px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+        
+        textarea:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+        
+        .button-section {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #0056b3;
+        }
+        
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .output-section {
+            margin-top: 30px;
+        }
+        
+        .output-box {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .stats {
+            background-color: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stats h3 {
+            margin-top: 0;
+            color: #0066cc;
+        }
+        
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        
+        .copy-button {
+            background-color: #28a745;
+            margin-left: 10px;
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+        
+        .copy-button:hover {
+            background-color: #218838;
+        }
+
+        .table-container {
+            margin-top: 20px;
+            overflow-x: auto;
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 12px;
+        }
+
+        .results-table th,
+        .results-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .results-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .results-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .results-table tr:hover {
+            background-color: #e8f4f8;
+        }
+
+        .coverage-value {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+
+        .coverage-100 {
+            color: #28a745;
+        }
+
+        .coverage-high {
+            color: #ffc107;
+        }
+
+        .coverage-low {
+            color: #dc3545;
+        }
+
+        .uncovered-lines {
+            font-family: 'Courier New', monospace;
+            color: #dc3545;
+            font-size: 11px;
+        }
+
+        .view-toggle {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .view-toggle button {
+            margin: 0 5px;
+            padding: 8px 16px;
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .view-toggle button.active {
+            background-color: #007bff;
+        }
+
+        .view-toggle button:hover {
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Coverage Log Parser</h1>
+        
+        <div class="input-section">
+            <label for="fileInput">Select coverage.log file:</label>
+            <input type="file" id="fileInput" accept=".log,.txt" style="margin-bottom: 15px; padding: 10px; border: 2px solid #ddd; border-radius: 4px; width: 100%; box-sizing: border-box;">
+
+            <label for="logInput">Or paste your coverage.log content here:</label>
+            <textarea id="logInput" placeholder="Paste the contents of your coverage.log file here..."></textarea>
+        </div>
+
+        <div class="button-section">
+            <button onclick="parseCoverage()">Parse Coverage Data</button>
+        </div>
+        
+        <h2>Known flaky</h2>
+        <ul>
+            <li>
+                ProjectServicePageHourSection.tsx
+            </li>
+            <li>
+                ProjectForm.hooks.ts
+            </li>
+            <li>
+                InvoiceDetailsPageTabs.tsx
+            </li>
+        </ul>
+
+        <div class="output-section">
+            <div id="stats" style="display: none;"></div>
+            <div id="error" style="display: none;"></div>
+            <div id="output" style="display: none;">
+                <div class="view-toggle">
+                    <button id="tableViewBtn" class="active" onclick="showTableView()">Table View</button>
+                    <button id="jsonViewBtn" onclick="showJsonView()">JSON View</button>
+                </div>
+
+                <div id="tableView">
+                    <label>Coverage Results Table:</label>
+                    <div class="table-container">
+                        <table id="resultsTable" class="results-table">
+                            <thead>
+                                <tr>
+                                    <th>File</th>
+                                    <th>Statements (%)</th>
+                                    <th>Branch (%)</th>
+                                    <th>Functions (%)</th>
+                                    <th>Lines (%)</th>
+                                    <th>Uncovered Lines</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="jsonView" style="display: none;">
+                    <label for="outputBox">Parsed JavaScript Object:</label>
+                    <button class="copy-button" onclick="copyToClipboard()">Copy to Clipboard</button>
+                    <div id="outputBox" class="output-box"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set up file input handler on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('fileInput');
+            fileInput.addEventListener('change', handleFileSelect);
+        });
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('logInput').value = e.target.result;
+                showSuccess(`File "${file.name}" loaded successfully!`);
+            };
+            reader.onerror = function() {
+                showError('Error reading file. Please try again.');
+            };
+            reader.readAsText(file);
+        }
+
+        function stripAnsiCodes(text) {
+            // Remove ANSI escape codes
+            return text.replace(/\x1b\[[0-9;]*m/g, '');
+        }
+        
+        function parseCoverage() {
+            const input = document.getElementById('logInput').value;
+            const statsDiv = document.getElementById('stats');
+            const errorDiv = document.getElementById('error');
+            const outputDiv = document.getElementById('output');
+            const outputBox = document.getElementById('outputBox');
+            
+            // Hide previous results
+            statsDiv.style.display = 'none';
+            errorDiv.style.display = 'none';
+            outputDiv.style.display = 'none';
+            
+            if (!input.trim()) {
+                showError('Please paste some coverage log content first.');
+                return;
+            }
+            
+            try {
+                const result = parseCoverageData(input);
+                
+                // Show statistics
+                const tableCount = Object.keys(result.tables).length;
+                const totalFiles = Object.keys(result.aggregated).length;
+                
+                statsDiv.innerHTML = `
+                    <h3>Parsing Results</h3>
+                    <p><strong>Coverage tables found:</strong> ${tableCount}</p>
+                    <p><strong>Unique files processed:</strong> ${totalFiles}</p>
+                `;
+                statsDiv.style.display = 'block';
+                
+                // Show output
+                outputBox.textContent = JSON.stringify(result.aggregated, null, 2);
+                populateTable(result.aggregated);
+                outputDiv.style.display = 'block';
+                
+            } catch (error) {
+                showError('Error parsing coverage data: ' + error.message);
+            }
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.innerHTML = `<strong>Error:</strong> ${message}`;
+            errorDiv.style.display = 'block';
+        }
+
+        function showSuccess(message) {
+            const statsDiv = document.getElementById('stats');
+            statsDiv.innerHTML = `<h3>Success</h3><p>${message}</p>`;
+            statsDiv.style.display = 'block';
+
+            // Hide success message after 3 seconds
+            setTimeout(() => {
+                if (statsDiv.innerHTML.includes('Success')) {
+                    statsDiv.style.display = 'none';
+                }
+            }, 3000);
+        }
+        
+        function parseCoverageData(input) {
+            const lines = input.split('\n');
+            const tables = {};
+            const aggregated = {};
+            let tableIndex = 0;
+            
+            // Find coverage table boundaries
+            const delimiterRegex = /-{10,}/;
+            const headerRegex = /File\s*\|\s*%\s*Stmts\s*\|\s*%\s*Branch\s*\|\s*%\s*Funcs\s*\|\s*%\s*Lines\s*\|\s*Uncovered Line #s/;
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = stripAnsiCodes(lines[i]);
+                
+                if (delimiterRegex.test(line)) {
+                    // Check if next line is header
+                    if (i + 1 < lines.length && headerRegex.test(stripAnsiCodes(lines[i + 1]))) {
+                        // Found start of table
+                        const tableData = extractTable(lines, i);
+                        if (tableData.rows.length > 0) {
+                            tables[`table_${tableIndex++}`] = tableData;
+                            
+                            // Aggregate data
+                            tableData.rows.forEach(row => {
+                                if (!aggregated[row.file]) {
+                                    aggregated[row.file] = {
+                                        "Stmts": [],
+                                        "Branch": [],
+                                        "Funcs": [],
+                                        "Lines": [],
+                                        "Uncovered Line": []
+                                    };
+                                }
+
+                                // Add values only if they don't already exist (deduplication)
+                                if (!aggregated[row.file]["Stmts"].includes(row.stmts)) {
+                                    aggregated[row.file]["Stmts"].push(row.stmts);
+                                }
+                                if (!aggregated[row.file]["Branch"].includes(row.branch)) {
+                                    aggregated[row.file]["Branch"].push(row.branch);
+                                }
+                                if (!aggregated[row.file]["Funcs"].includes(row.funcs)) {
+                                    aggregated[row.file]["Funcs"].push(row.funcs);
+                                }
+                                if (!aggregated[row.file]["Lines"].includes(row.lines)) {
+                                    aggregated[row.file]["Lines"].push(row.lines);
+                                }
+
+                                // For uncovered lines, add each line number only if it doesn't already exist
+                                if (row.uncoveredLines.length > 0) {
+                                    row.uncoveredLines.forEach(lineNum => {
+                                        if (!aggregated[row.file]["Uncovered Line"].includes(lineNum)) {
+                                            aggregated[row.file]["Uncovered Line"].push(lineNum);
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+            
+            return { tables, aggregated };
+        }
+        
+        function extractTable(lines, startIndex) {
+            const rows = [];
+            let i = startIndex + 2; // Skip delimiter and header
+            
+            // Skip second delimiter line
+            if (i < lines.length && /-{10,}/.test(stripAnsiCodes(lines[i]))) {
+                i++;
+            }
+            
+            // Process data rows until we hit another delimiter or end
+            while (i < lines.length) {
+                const cleanLine = stripAnsiCodes(lines[i]);
+                
+                if (/-{10,}/.test(cleanLine)) {
+                    break; // End of table
+                }
+                
+                const row = parseTableRow(cleanLine);
+                if (row) {
+                    rows.push(row);
+                }
+                i++;
+            }
+            
+            return { rows };
+        }
+        
+        function parseTableRow(line) {
+            // Split by | and clean up
+            const parts = line.split('|').map(part => part.trim());
+            
+            if (parts.length < 6) {
+                return null; // Not a valid data row
+            }
+            
+            const file = parts[0];
+            const stmts = parts[1];
+            const branch = parts[2];
+            const funcs = parts[3];
+            const lines = parts[4];
+            const uncoveredStr = parts[5];
+            
+            // Skip if file is empty or looks like a summary row
+            if (!file || file === 'All files' || file.includes('components') && !file.includes('.')) {
+                return null;
+            }
+            
+            // Extract filename from path
+            const filename = file.includes('/') ? file.split('/').pop() : file;
+            
+            // Parse uncovered line numbers
+            const uncoveredLines = [];
+            if (uncoveredStr && uncoveredStr.trim() && !uncoveredStr.includes('undefined')) {
+                const lineNumbers = uncoveredStr.split(',').map(num => num.trim()).filter(num => num && /^\d+$/.test(num));
+                uncoveredLines.push(...lineNumbers);
+            }
+            
+            return {
+                file: filename,
+                stmts,
+                branch,
+                funcs,
+                lines,
+                uncoveredLines
+            };
+        }
+        
+        function populateTable(data) {
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+
+            Object.entries(data).forEach(([filename, metrics]) => {
+                const row = document.createElement('tr');
+
+                // File name
+                const fileCell = document.createElement('td');
+                fileCell.textContent = filename;
+                row.appendChild(fileCell);
+
+                // Coverage metrics
+                ['Stmts', 'Branch', 'Funcs', 'Lines'].forEach(metric => {
+                    const cell = document.createElement('td');
+                    const values = metrics[metric];
+                    const displayValue = values.length > 0 ? values.join(', ') : 'N/A';
+                    cell.innerHTML = `<span class="coverage-value ${getCoverageClass(values)}">${displayValue}</span>`;
+                    row.appendChild(cell);
+                });
+
+                // Uncovered lines
+                const uncoveredCell = document.createElement('td');
+                const uncoveredLines = metrics['Uncovered Line'];
+                if (uncoveredLines.length > 0) {
+                    uncoveredCell.innerHTML = `<span class="uncovered-lines">${uncoveredLines.join(', ')}</span>`;
+                } else {
+                    uncoveredCell.textContent = '-';
+                }
+                row.appendChild(uncoveredCell);
+
+                tableBody.appendChild(row);
+            });
+        }
+
+        function getCoverageClass(values) {
+            if (values.length === 0) return '';
+
+            // Get the lowest coverage value to determine color
+            const numericValues = values.map(v => parseFloat(v)).filter(v => !isNaN(v));
+            if (numericValues.length === 0) return '';
+
+            const minValue = Math.min(...numericValues);
+
+            if (minValue === 100) return 'coverage-100';
+            if (minValue >= 80) return 'coverage-high';
+            return 'coverage-low';
+        }
+
+        function showTableView() {
+            document.getElementById('tableView').style.display = 'block';
+            document.getElementById('jsonView').style.display = 'none';
+            document.getElementById('tableViewBtn').classList.add('active');
+            document.getElementById('jsonViewBtn').classList.remove('active');
+        }
+
+        function showJsonView() {
+            document.getElementById('tableView').style.display = 'none';
+            document.getElementById('jsonView').style.display = 'block';
+            document.getElementById('tableViewBtn').classList.remove('active');
+            document.getElementById('jsonViewBtn').classList.add('active');
+        }
+
+        function copyToClipboard() {
+            const outputBox = document.getElementById('outputBox');
+            const text = outputBox.textContent;
+
+            navigator.clipboard.writeText(text).then(() => {
+                const button = event.target;
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                button.style.backgroundColor = '#218838';
+
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.backgroundColor = '#28a745';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                alert('Failed to copy to clipboard. Please select and copy manually.');
+            });
+        }
+    </script>
+</body>
+</html>
